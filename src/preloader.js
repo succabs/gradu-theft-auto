@@ -13,6 +13,8 @@ export class Preloader extends Phaser.Scene {
         this.load.image("background", "background.png");
 
         this.load.image("player", "player/player.png");
+        this.load.image("feissari", "feissari.png");
+        this.load.image("kaveri", "kaveri.png");
 
         // Fonts
         this.load.bitmapFont(
