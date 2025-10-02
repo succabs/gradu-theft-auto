@@ -8,13 +8,31 @@ export class GrilliKaveri extends Physics.Arcade.Sprite {
         scene.physics.add.existing(this);
 
         this.setDisplaySize(64, 64);
-        this.body.setSize(64, 64);
+        this.body.setSize(64, 64, true);
         this.setImmovable(true);
         this.triggered = false;
     }
 
     reset() {
         this.triggered = false;
+    }
+
+    activateAt(x, y) {
+        this.reset();
+        this.setPosition(x, y);
+        this.setActive(true);
+        this.setVisible(true);
+        if (this.body) {
+            this.body.enable = true;
+        }
+    }
+
+    deactivate() {
+        this.setActive(false);
+        this.setVisible(false);
+        if (this.body) {
+            this.body.enable = false;
+        }
     }
 
     trigger(player) {

@@ -8,8 +8,9 @@ export class Feissari extends Physics.Arcade.Sprite {
         scene.physics.add.existing(this);
 
         this.setDisplaySize(64, 64);
-        this.body.setSize(64, 64);
+        this.body.setSize(64, 64, true);
         this.setImmovable(true);
+        this.triggered = false;
     }
 
     reset() {
@@ -17,6 +18,9 @@ export class Feissari extends Physics.Arcade.Sprite {
     }
 
     trigger(player, onComplete) {
+        if (this.triggered) return;
+        this.triggered = true;
+
         // Pysäytä pelaaja
         player.state = "stunned";
         player.setVelocity(0);
@@ -37,6 +41,24 @@ export class Feissari extends Physics.Arcade.Sprite {
             player.state = "can_move";
             if (onComplete) onComplete();
         });
+    }
+
+    activateAt(x, y) {
+        this.setPosition(x, y);
+        this.triggered = false;
+        this.setActive(true);
+        this.setVisible(true);
+        if (this.body) {
+            this.body.enable = true;
+        }
+    }
+
+    deactivate() {
+        this.setActive(false);
+        this.setVisible(false);
+        if (this.body) {
+            this.body.enable = false;
+        }
     }
 }
 
