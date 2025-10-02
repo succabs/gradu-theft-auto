@@ -11,6 +11,9 @@ export class Player extends Physics.Arcade.Image {
         this.slowNextDay = false;
         this.scene.add.existing(this);
         this.scene.physics.add.existing(this);
+
+        this.setDisplaySize(64, 64);
+        this.body.setSize(64, 64);
     }
 
     start() {

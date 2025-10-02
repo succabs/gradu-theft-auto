@@ -2,11 +2,13 @@ import { Physics } from "phaser";
 
 export class GrilliKaveri extends Physics.Arcade.Sprite {
     constructor(scene, x, y) {
-        super(scene, x, y, "player"); // Käytetään placeholder-spriteä, vaihda kun saat oman
+        super(scene, x, y, "kaveri");
         this.scene = scene;
         scene.add.existing(this);
         scene.physics.add.existing(this);
 
+        this.setDisplaySize(64, 64);
+        this.body.setSize(64, 64);
         this.setImmovable(true);
         this.triggered = false;
     }

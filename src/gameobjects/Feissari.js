@@ -7,6 +7,8 @@ export class Feissari extends Physics.Arcade.Sprite {
         scene.add.existing(this);
         scene.physics.add.existing(this);
 
+        this.setDisplaySize(64, 64);
+        this.body.setSize(64, 64);
         this.setImmovable(true);
     }
 
