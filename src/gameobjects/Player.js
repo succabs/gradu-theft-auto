@@ -51,6 +51,24 @@ export class Player extends Physics.Arcade.Image {
         }
     }
 
-    update() {}
+    update() {
+        if (!this.scene || this.scene.streetMinX === undefined) return;
+
+        const halfWidth = this.displayWidth / 2;
+        const minX = this.scene.streetMinX + halfWidth;
+        const maxX = this.scene.streetMaxX - halfWidth;
+
+        if (this.x < minX) {
+            this.x = minX;
+            if (this.body.velocity.x < 0) {
+                this.body.setVelocityX(0);
+            }
+        } else if (this.x > maxX) {
+            this.x = maxX;
+            if (this.body.velocity.x > 0) {
+                this.body.setVelocityX(0);
+            }
+        }
+    }
 }
 

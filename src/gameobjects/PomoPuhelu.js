@@ -21,13 +21,8 @@ export class PomoPuhelu {
 
         // Piirrä pomo-siluetti (placeholder neliö)
         this.avatar = this.scene.add
-            .rectangle(
-                this.scene.scale.width / 2,
-                this.scene.scale.height - 100,
-                80,
-                80,
-                0x333333
-            )
+            .image(this.scene.scale.height - 108, "pomopuhelu")
+            .setDisplaySize(96, 96)
             .setScrollFactor(0);
 
         this.dialogBox = this.scene.add

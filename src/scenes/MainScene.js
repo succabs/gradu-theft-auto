@@ -21,36 +21,64 @@ export class MainScene extends Scene {
 
     createMap() {
         // Määritetään maailmalle rajat
-        const mapWidth = 800;
-        const mapHeight = 4000;
-
-        this.physics.world.setBounds(0, 0, mapWidth, mapHeight);
-        this.cameras.main.setBounds(0, 0, mapWidth, mapHeight);
+        this.mapWidth = 800;
+        this.mapHeight = 4000;
+        this.streetWidth = 300;
+        this.streetMinX = (this.mapWidth - this.streetWidth) / 2 + 40;
+        this.streetMaxX = this.mapWidth - this.streetMinX;
+        this.physics.world.setBounds(0, 0, this.mapWidth, this.mapHeight);
+        this.cameras.main.setBounds(0, 0, this.mapWidth, this.mapHeight);
 
         // Keskikaista (Kauppakatu)
         this.add.rectangle(
-            mapWidth / 2,
-            mapHeight / 2,
-            300,
-            mapHeight,
+            this.mapWidth / 2,
+            this.mapHeight / 2,
+            this.streetWidth,
+            this.mapHeight,
             0xdddddd
         );
 
         // Vasemmat rakennukset
-        for (let y = 0; y < mapHeight; y += 300) {
+        for (let y = 0; y < this.mapHeight; y += 300) {
             this.add.rectangle(100, y + 100, 200, 250, 0x9999cc); // Rakennus
         }
 
         // Oikeat rakennukset
-        for (let y = 150; y < mapHeight; y += 300) {
+        for (let y = 150; y < this.mapHeight; y += 300) {
             this.add.rectangle(700, y + 100, 200, 250, 0xcc9999); // Rakennus
         }
 
+        // Kadun rajat (näkymättömät esteet)
+        const wallThickness = 40;
+        this.streetWalls = [
+            this.add
+                .zone(
+                    this.streetMinX - wallThickness / 2,
+                    this.mapHeight / 2,
+                    wallThickness,
+                    this.mapHeight
+                )
+                .setOrigin(0.5),
+            this.add
+                .zone(
+                    this.streetMaxX + wallThickness / 2,
+                    this.mapHeight / 2,
+                    wallThickness,
+                    this.mapHeight
+                )
+                .setOrigin(0.5),
+        ];
+
+        this.streetWalls.forEach((wall) => {
+            this.physics.add.existing(wall, true);
+            wall.body.updateFromGameObject();
+        });
+
         // Kirjasto ylhäällä
         this.libraryZone = this.add.rectangle(
-            mapWidth / 2,
+            this.mapWidth / 2,
             100,
-            300,
+            this.streetWidth,
             100,
             0x66cc66
         );
@@ -70,25 +98,35 @@ export class MainScene extends Scene {
         this.player.setPosition(400, 3900);
 
         // Random encounterit
-        this.feissariGroup = this.physics.add.group();
+        this.feissariGroup = this.physics.add.group({ runChildUpdate: true });
         this.pomoSoitettu = false;
 
         this.grilliKaveri = new GrilliKaveri(this, -1000, -1000);
         this.grilliKaveri.deactivate();
 
-        this.physics.add.overlap(
+        if (this.streetWalls) {
+            this.streetWalls.forEach((wall) => {
+                this.physics.add.collider(this.player, wall);
+                this.physics.add.collider(this.feissariGroup, wall);
+                this.physics.add.collider(this.grilliKaveri, wall);
+            });
+        }
+
+        this.physics.add.collider(
             this.player,
             this.feissariGroup,
-            (player, feissari) => {
-                feissari.trigger(player);
-            }
+            this.handleFeissariEncounter,
+            null,
+            this
         );
 
-        this.physics.add.overlap(this.player, this.grilliKaveri, () => {
-            if (!this.grilliKaveri.triggered) {
-                this.grilliKaveri.trigger(this.player);
-            }
-        });
+        this.physics.add.collider(
+            this.player,
+            this.grilliKaveri,
+            this.handleGrilliEncounter,
+            null,
+            this
+        );
 
         this.pomoZone = this.add.zone(-1000, -1000, 80, 80);
         this.physics.add.existing(this.pomoZone);
@@ -241,10 +279,19 @@ export class MainScene extends Scene {
         const count = Phaser.Math.Between(1, 10);
 
         for (let i = 0; i < count; i++) {
-            const position = this.getRandomStreetPosition(reservedPositions, 120);
+            const position = this.getRandomStreetPosition(
+                reservedPositions,
+                120
+            );
             reservedPositions.push(position);
             const feissari = new Feissari(this, position.x, position.y);
             this.feissariGroup.add(feissari);
+            feissari.activateAt(
+                position.x,
+                position.y,
+                this.streetMinX,
+                this.streetMaxX
+            );
         }
     }
 
@@ -257,10 +304,10 @@ export class MainScene extends Scene {
     getRandomStreetPosition(reservedPositions = [], minDistance = 100) {
         const mapWidth = 800;
         const streetWidth = 300;
-        const streetMinX = (mapWidth - streetWidth) / 2 + 40;
-        const streetMaxX = mapWidth - streetMinX;
+        const streetMinX = this.streetMinX ?? 290;
+        const streetMaxX = this.streetMaxX ?? 510;
         const minY = 300;
-        const maxY = 3800;
+        const maxY = this.mapHeight ? this.mapHeight - 200 : 3800;
 
         let attempts = 0;
         while (attempts < 30) {
@@ -269,7 +316,8 @@ export class MainScene extends Scene {
 
             const tooClose = reservedPositions.some((pos) => {
                 return (
-                    Phaser.Math.Distance.Between(x, y, pos.x, pos.y) < minDistance
+                    Phaser.Math.Distance.Between(x, y, pos.x, pos.y) <
+                    minDistance
                 );
             });
 
@@ -284,6 +332,15 @@ export class MainScene extends Scene {
             x: Phaser.Math.Between(streetMinX, streetMaxX),
             y: Phaser.Math.Between(minY, maxY),
         };
+    }
+    handleFeissariEncounter(player, feissari) {
+        feissari.trigger(player);
+    }
+
+    handleGrilliEncounter(player, grilli) {
+        if (!grilli.triggered) {
+            grilli.trigger(player);
+        }
     }
 
     enablePomoZone(x, y) {
