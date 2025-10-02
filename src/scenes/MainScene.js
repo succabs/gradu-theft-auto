@@ -70,10 +70,19 @@ export class MainScene extends Scene {
         this.player.setPosition(400, 3900);
 
         // Random encounterit
-        this.feissari = new Feissari(this, 400, 3000);
+        this.feissariGroup = this.physics.add.group();
         this.pomoSoitettu = false;
 
-        this.grilliKaveri = new GrilliKaveri(this, 400, 2800);
+        this.grilliKaveri = new GrilliKaveri(this, -1000, -1000);
+        this.grilliKaveri.deactivate();
+
+        this.physics.add.overlap(
+            this.player,
+            this.feissariGroup,
+            (player, feissari) => {
+                feissari.trigger(player);
+            }
+        );
 
         this.physics.add.overlap(this.player, this.grilliKaveri, () => {
             if (!this.grilliKaveri.triggered) {
@@ -81,18 +90,26 @@ export class MainScene extends Scene {
             }
         });
 
+        this.pomoZone = this.add.zone(-1000, -1000, 80, 80);
+        this.physics.add.existing(this.pomoZone);
+        this.pomoZone.body.setAllowGravity(false);
+        this.pomoZone.body.moves = false;
+        this.disablePomoZone();
+
+        this.physics.add.overlap(this.player, this.pomoZone, () => {
+            if (this.pomoSoitettu) return;
+            this.pomoSoitettu = true;
+            this.disablePomoZone();
+            this.player.state = "stunned";
+            this.player.setVelocity(0);
+            new PomoPuhelu(this, this.player);
+        });
+
         // Kamera seuraa
         this.cameras.main.startFollow(this.player);
 
         // Pelaaja ei voi mennä ulos maailmasta
         this.player.setCollideWorldBounds(true);
-
-        this.physics.add.overlap(this.player, this.feissari, () => {
-            if (!this.feissari.triggered) {
-                this.feissari.triggered = true;
-                this.feissari.trigger(this.player);
-            }
-        });
 
         // Cursor keys
         this.cursors = this.input.keyboard.createCursorKeys();
@@ -107,6 +124,7 @@ export class MainScene extends Scene {
                 remainingTime: this.dayTimeLimit,
             });
 
+            this.setupDailyEncounters();
             this.player.start();
         });
     }
@@ -137,8 +155,6 @@ export class MainScene extends Scene {
         this.dayEnded = false;
         this.libraryReached = false;
 
-        this.pomoSoitettu = false;
-
         if (this.krapulaHuomenna) {
             this.player.slowNextDay = true;
             this.krapulaHuomenna = false;
@@ -146,13 +162,7 @@ export class MainScene extends Scene {
             this.player.slowNextDay = false;
         }
 
-        if (this.grilliKaveri) {
-            this.grilliKaveri.reset();
-        }
-
-        if (this.feissari) {
-            this.feissari.reset();
-        }
+        this.pomoSoitettu = false;
 
         this.scene.get("HudScene").setDay(this.currentDay);
         this.scene.get("HudScene").setGradu(this.graduProgress);
@@ -160,6 +170,7 @@ export class MainScene extends Scene {
         // Resetoi pelaaja kompassille (alas)
         this.player.setPosition(400, 3900);
         this.cameras.main.fadeIn(500);
+        this.setupDailyEncounters();
         this.player.start();
     }
 
@@ -187,14 +198,6 @@ export class MainScene extends Scene {
             });
         }
 
-        if (!this.pomoSoitettu && this.player.y < 3600) {
-            this.pomoSoitettu = true;
-            this.player.state = "stunned";
-            this.player.setVelocity(0); // ← tämä pysäyttää kaiken liikkeen
-
-            new PomoPuhelu(this, this.player);
-        }
-
         if (this.dayEnded) return;
 
         this.elapsedTime += this.game.loop.delta / 1000;
@@ -209,6 +212,92 @@ export class MainScene extends Scene {
         if (this.elapsedTime >= this.dayTimeLimit) {
             this.endDay(false); // ei päästy kirjastoon
         }
+    }
+
+    setupDailyEncounters() {
+        if (!this.feissariGroup) return;
+
+        this.clearFeissarit();
+
+        const reservedPositions = [];
+        this.spawnFeissarit(reservedPositions);
+
+        if (this.grilliKaveri) {
+            const grilliPos = this.getRandomStreetPosition(
+                reservedPositions,
+                120
+            );
+            reservedPositions.push(grilliPos);
+            this.grilliKaveri.activateAt(grilliPos.x, grilliPos.y);
+        }
+
+        const pomoPos = this.getRandomStreetPosition(reservedPositions, 120);
+        reservedPositions.push(pomoPos);
+        this.enablePomoZone(pomoPos.x, pomoPos.y);
+        this.pomoSoitettu = false;
+    }
+
+    spawnFeissarit(reservedPositions) {
+        const count = Phaser.Math.Between(1, 10);
+
+        for (let i = 0; i < count; i++) {
+            const position = this.getRandomStreetPosition(reservedPositions, 120);
+            reservedPositions.push(position);
+            const feissari = new Feissari(this, position.x, position.y);
+            this.feissariGroup.add(feissari);
+        }
+    }
+
+    clearFeissarit() {
+        if (this.feissariGroup) {
+            this.feissariGroup.clear(true, true);
+        }
+    }
+
+    getRandomStreetPosition(reservedPositions = [], minDistance = 100) {
+        const mapWidth = 800;
+        const streetWidth = 300;
+        const streetMinX = (mapWidth - streetWidth) / 2 + 40;
+        const streetMaxX = mapWidth - streetMinX;
+        const minY = 300;
+        const maxY = 3800;
+
+        let attempts = 0;
+        while (attempts < 30) {
+            const x = Phaser.Math.Between(streetMinX, streetMaxX);
+            const y = Phaser.Math.Between(minY, maxY);
+
+            const tooClose = reservedPositions.some((pos) => {
+                return (
+                    Phaser.Math.Distance.Between(x, y, pos.x, pos.y) < minDistance
+                );
+            });
+
+            if (!tooClose) {
+                return { x, y };
+            }
+
+            attempts++;
+        }
+
+        return {
+            x: Phaser.Math.Between(streetMinX, streetMaxX),
+            y: Phaser.Math.Between(minY, maxY),
+        };
+    }
+
+    enablePomoZone(x, y) {
+        if (!this.pomoZone) return;
+        this.pomoZone.setPosition(x, y);
+        this.pomoZone.body.enable = true;
+        this.pomoZone.active = true;
+    }
+
+    disablePomoZone() {
+        if (!this.pomoZone) return;
+        this.pomoZone.body.enable = false;
+        this.pomoZone.active = false;
+        this.pomoZone.setPosition(-1000, -1000);
     }
 }
 
