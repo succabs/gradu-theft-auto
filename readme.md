@@ -4,9 +4,9 @@
 
 Gradu Theft Auto is a top-down, time-management micro game about a student
 trying to finish their master's thesis before study grants run out. Each day
-you hustle along Kuopio's city streets toward the library, juggling distractions
+you hustle along Kauppakatu toward the University library, juggling distractions
 and time pressure while trying to reach 100 % thesis progress before the
-21-day deadline expires.
+21-month student allowance deadline expires.
 
 ## Technology
 
@@ -20,7 +20,7 @@ and time pressure while trying to reach 100 % thesis progress before the
 
 1. Run the game and click anywhere on the title screen to start the day.
 2. Use the arrow keys to move the student up and down the street.
-3. Reach the green library zone at the top of the map before the daily timer
+3. Reach library at the top of the map before the daily timer
    expires to earn 5–15 % thesis progress.
 4. Survive 21 in-game days and hit 100 % progress to win; run out of time and
    you'll see the game over screen.
@@ -28,14 +28,14 @@ and time pressure while trying to reach 100 % thesis progress before the
 ## Encounters
 
 -   **Feissari:** A street fundraiser who stops you for a quick chat, stunning
-    you for three seconds before letting you go.【F:src/gameobjects/Feissari.js†L5-L35】
--   **PomoPuhelu:** Your boss calls as you approach the office block, playing a
+    you for three seconds before letting you go.
+-   **Pomo:** Your boss calls as you approach the office block, playing a
     short dialogue sequence that freezes you in place until every line is
-    delivered.【F:src/gameobjects/PomoPuhelu.js†L1-L64】【F:src/scenes/MainScene.js†L105-L127】
--   **GrilliKaveri:** A friend invites you to a barbecue; accepting skips the
-    remainder of the day and guarantees a sluggish start tomorrow.【F:src/gameobjects/GrilliKaveri.js†L1-L39】【F:src/scenes/MainScene.js†L79-L112】
--   **Library:** Make it to the library at the north end of town to bank thesis
-    progress and start the next day.【F:src/scenes/MainScene.js†L52-L74】【F:src/scenes/MainScene.js†L129-L147】
+    delivered.
+-   **Kaveri:** A friend invites you to a barbecue; accepting skips the
+    remainder of the day and guarantees a sluggish start tomorrow.
+-   **Library:** Make it to the library at the north end of town to get thesis
+    progress and start the next day.
 
 ## Installation
 
